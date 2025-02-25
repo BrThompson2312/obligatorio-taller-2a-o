@@ -421,7 +421,7 @@ function listadoRegistros() {
                         $("#gridRegistros").innerHTML += `
                         <ion-row class="ion-align-items-center ion-text-center">
                             <ion-col>
-                                <img src="http://movetrack.develotion.com/imgs/${i.idActividad}.png">
+                                <img src="https://movetrack.develotion.com/imgs/${i.idActividad}.png">
                             </ion-col>
                             <ion-col>${i.id}</ion-col>
                             <ion-col>${i.idActividad}</ion-col>
