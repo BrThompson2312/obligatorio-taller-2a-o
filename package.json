@@ -1,12 +1,20 @@
 {
-  "name": "obligatorio",
+  "name": "obligatorio-taller-2a-o",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BrThompson2312/obligatorio-taller-2a-o.git"
+  },
   "author": "",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/BrThompson2312/obligatorio-taller-2a-o/issues"
+  },
+  "homepage": "https://github.com/BrThompson2312/obligatorio-taller-2a-o#readme",
   "description": "",
   "dependencies": {
     "@capacitor/android": "^7.0.1",
