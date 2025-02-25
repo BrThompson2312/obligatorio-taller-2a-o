@@ -6,9 +6,11 @@ const urlBase = 'https://movetrack.develotion.com';
 let latitudOrigen = "";
 let longitudOrigen = "";
 
-let map;    
+let map;
 
-navigator.geolocation.getCurrentPosition(guardarUbicacion, evaluarError);
+function solicitarUbicacion() {
+    navigator.geolocation.getCurrentPosition(guardarUbicacion, evaluarError);
+}
 
 function guardarUbicacion(position) {
     latitudOrigen=position.coords.latitude;
@@ -34,14 +36,26 @@ ocultarSecciones();
 eventos();
 
 function inicio() {
-    console.log(localStorage.getItem("token"));
     if (localStorage.getItem("token") == null) {
         mostrarMenuLogueado(false);
         ruteo.push("/login");
     } else {
+        solicitarUbicacion();
         mostrarMenuLogueado();
         ruteo.push("/");
     }
+}
+
+function cargarPaisesSelect() {
+    $("#txtResidencia").innerHTML="";
+    apiPaises()
+    .then(response => {
+        response.paises.forEach(e => {
+            $("#txtResidencia").innerHTML += `
+                <ion-select-option value="${e.id}">${e.name}</ion-select-option>
+            `
+        })
+    })
 }
 
 function ocultarSecciones() {
@@ -75,6 +89,7 @@ function rutas(event) {
     switch(event.detail.to) {
         case '/registro':
             if (localStorage.getItem("token") != null) return ruteo.push("/");
+            cargarPaisesSelect();
             $("#registro").style.display = "block";
             break;
 
@@ -96,8 +111,9 @@ function rutas(event) {
 
         case '/listadoRegistros':
             verificarLogueado();
-            listadoRegistros();
             $("#listadoRegistros").style.display = "block";
+            document.querySelector("#registros").innerHTML = "";
+            listadoRegistros();
             break;
 
         case '/tiempoTotalYDiario':
@@ -171,38 +187,31 @@ function registrarse() {
         const txtResidencia = $("#txtResidencia").value;
 
         validarRegistro(txtUsuario, txtPassword, txtResidencia);
-        const idPais = buscarPaisXNombre(txtResidencia);
 
-        if (idPais != null) {
-            const usuario = {
-                "usuario": txtUsuario,
-                "password": txtPassword,
-                "idPais": idPais
-            }
-            fetch(urlBase+"/usuarios.php", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(usuario)
-            })
-            .then(e => e.json())
-            .then(e => {
-                if (e.codigo == 200) {
-                    localStorage.setItem("id", e.id);
-                    localStorage.setItem("token", e.apiKey);
-                    inicio();
-                } else {
-                    console.log(e.mensaje);
-                    mostrarMensaje(e.mensaje)
-                }
-            })
-            .catch(e => console.log(e))
-            
-        } else {
-            console.log("pais nulo")
+        const usuario = {
+            "usuario": txtUsuario,
+            "password": txtPassword,
+            "idPais": txtResidencia
         }
-
+        fetch(urlBase+"/usuarios.php", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(usuario)
+        })
+        .then(e => e.json())
+        .then(e => {
+            if (e.codigo == 200) {
+                localStorage.setItem("id", e.id);
+                localStorage.setItem("token", e.apiKey);
+                inicio();
+            } else {
+                mostrarMensaje(e.mensaje)
+            }
+        })
+        .catch(e => console.log(e))
+            
     } catch (e) {
         console.log(e.message)
         mostrarMensaje(e.message)
@@ -248,8 +257,6 @@ function login() {
             if (e.codigo != 200) {
                 mostrarMensaje(e.mensaje);
             } else {
-                console.log(e);
-
                 mostrarMensaje("Login Exitoso");
 
                 localStorage.setItem("id", e.id)
@@ -272,7 +279,7 @@ function validarRegistro(nombre, password, residencia) {
     if (password.trim().length == 0) {
         throw new Error("Contraseña obligatoria");
     }
-    if (residencia.trim().length == 0) {
+    if (residencia == undefined || residencia.trim().length == 0) {
         throw new Error("Residencia obligatoria");
     }
 }
@@ -301,24 +308,6 @@ async function apiPaises() {
     }
 }
 
-async function buscarPaisXNombre(residencia) {
-    await apiPaises()
-    .then(response => {
-        for (let i = 0; i < response.paises.length; i++) {
-            if (response.paises[i].name == residencia) {
-                return response.paises[i].id;
-            }
-        }
-        console.log("Residencia no encontrada")
-        mostrarMensaje("Residencia no encontrada");
-        return null;
-    })
-    .catch(e => {
-        console.log(e)
-        mostrarMensaje(e)
-    });
-}
-
 async function apiActividades() {
     try {
         const response = await fetch(urlBase+"/actividades.php", {
@@ -338,7 +327,6 @@ async function apiActividades() {
 function selectActividades() {
     apiActividades()
     .then(e => {
-        console.log(e)
         if (e.codigo == 200) {
             e.actividades.forEach(i => {
                 document.querySelector("#agregarRegistro ion-select").innerHTML += 
@@ -352,6 +340,7 @@ function selectActividades() {
 }
 
 function agregarRegistroActividad() {
+    // document.querySelector("#registros").innerHTML = "";
     try {
         let txtActividad = $("#txtActividadRegistro").value;
         let txtTiempo = $("#txtTiempoRegistro").value;
@@ -360,16 +349,17 @@ function agregarRegistroActividad() {
         if (txtActividad == "" || txtTiempo == "" || txtFecha == "") {
             throw new Error("Campos vacios")
         }
-    
-        console.log(txtActividad, txtTiempo, txtFecha);
-    
+        if (txtTiempo < 0 || txtTiempo == 0) {
+            throw new Error("Ingrese tiempo valido")
+        }
+
         const registro = {
             idActividad: txtActividad,
             idUsuario: localStorage.getItem("id"),
             tiempo: txtTiempo,
             fecha: txtFecha
         };
-    
+
         mostrarMensaje("Registrando...", undefined, undefined, "warning");
         fetch(urlBase+"/registros.php", {
             method: 'POST',
@@ -388,7 +378,7 @@ function agregarRegistroActividad() {
             if (e.codigo == 200) {
                 console.log(e)
                 mostrarMensaje(e.mensaje)
-    
+
                 $("#txtActividadRegistro").value = "";
                 $("#txtTiempoRegistro").value = "";
                 $("#txtFechaRegistro").value = "";
@@ -417,17 +407,16 @@ async function apiRegistros() {
 }
 
 function listadoRegistros() {
-    $("#registros").innerHTML="";
+    const limit = true;
     mostrarMensaje("Cargando Listado...", undefined, undefined, "warning")
     apiRegistros()
     .then(e => {
         if (e.codigo == 200) {
-            console.log(e)
             if (e.registros.length == 0) {
                 $("#listadoRegistros div").innerHTML = "<p>No hay registros</p>"
             } else {
                 e.registros.forEach((i, o) => {
-                    if (o < 20) {
+                    if (limit) {
                         $("#registros").innerHTML += `
                         <ion-row class="ion-align-items-center ion-text-center">
                             <ion-col>
@@ -520,6 +509,7 @@ function mapaUsuarios() {
             maxZoom: 19,
             attribution: '© OpenStreetMap'
         }).addTo(map);
+        L.marker([latitudOrigen, longitudOrigen]).addTo(map).bindPopup("Mi Ubicacion").addTo(map).openPopup();
 
         usuariosPorPais()
         .then(res2 => {

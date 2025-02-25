@@ -84,7 +84,12 @@
                     <ion-input label="Contraseña" label-placement="stacked" placeholder="****" type="password" id="txtPassword"></ion-input>
                 </ion-item>
                 <ion-item>
-                    <ion-input label="País de residencia" label-placement="stacked" placeholder="Uruguay" id="txtResidencia"></ion-input>
+                    <!-- <ion-input label="País de residencia" label-placement="stacked" placeholder="Uruguay" id="txtResidencia"></ion-input> -->
+                    <ion-select label="Pais de residencia" placeholder="Seleccione país de residencia" id="txtResidencia">
+                        <!-- <ion-select-option value="apple">Apple</ion-select-option>
+                        <ion-select-option value="banana">Banana</ion-select-option>
+                        <ion-select-option value="orange">Orange</ion-select-option> -->
+                    </ion-select>
                 </ion-item>
                 <ion-button id="btnRegistrar" style="width: 100%;">Registrarse</ion-button>
             </ion-content>
@@ -133,7 +138,9 @@
                             <ion-col></ion-col>
                         </ion-row>
                     </ion-grid>
-                    <ion-grid id="registros"></ion-grid>
+                    <ion-grid id="registros">
+                        <p></p>
+                    </ion-grid>
                 </div>
             </ion-content>
         </div>
