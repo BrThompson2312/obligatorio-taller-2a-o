@@ -3,41 +3,44 @@ const $ = (p) => document.querySelector(p);
 
 const urlBase = 'https://movetrack.develotion.com';
 
-let tiempo = Number(localStorage.getItem("tiempoTotal"));
-let tiempoSesionActual = 0;
+let latitudOrigen = "";
+let longitudOrigen = "";
+
+let map;    
+
+navigator.geolocation.getCurrentPosition(guardarUbicacion, evaluarError);
+
+function guardarUbicacion(position) {
+    latitudOrigen=position.coords.latitude;
+    longitudOrigen=position.coords.longitude;
+}
+
+function evaluarError(error) {
+    switch(error.code) {
+        case 1:
+            mostrarMensaje("No se habilitó la geolocalización", undefined, undefined, "danger");
+            break;
+        case 2:
+            mostrarMensaje("No se pudo obtener geolocalización", undefined, undefined, "danger");
+            break;
+        case 3:
+            mostrarMensaje("Se agotó el tiempo para obtener la geolocalización", undefined, undefined, "danger");
+            break;
+    }
+}
 
 inicio();
 ocultarSecciones();
 eventos();
 
 function inicio() {
-    // console.clear();
-
-    console.log(Number(localStorage.getItem("tiempoTotal")))
-
-    if (localStorage.getItem("tiempoTotal")==null) {
-        localStorage.setItem("tiempoTotal", tiempo)
-    }
-
     console.log(localStorage.getItem("token"));
     if (localStorage.getItem("token") == null) {
         mostrarMenuLogueado(false);
         ruteo.push("/login");
     } else {
         mostrarMenuLogueado();
-        selectActividades();
         ruteo.push("/");
-
-        tiempo = Number(localStorage.getItem("tiempoTotal"));
-        setInterval(() => {
-            if (localStorage.getItem("token")!=null){
-                console.log(tiempo)
-                tiempo+=1;
-                tiempoSesionActual+=1;
-            }
-        }, 1000)
-
-        tiempoTotalIniciadoSesion();
     }
 }
 
@@ -87,6 +90,7 @@ function rutas(event) {
 
         case '/agregarRegistro':
             verificarLogueado();
+            selectActividades();
             $("#agregarRegistro").style.display = "block";
             break;
 
@@ -94,6 +98,19 @@ function rutas(event) {
             verificarLogueado();
             listadoRegistros();
             $("#listadoRegistros").style.display = "block";
+            break;
+
+        case '/tiempoTotalYDiario':
+            verificarLogueado();
+            tiempoTotal();
+            $("#tiempoTotalYDiario").style.display = "block";
+            break;
+
+        case '/mapaUsuarios':
+            $("#mapaUsuarios").style.display = "block";
+            setTimeout(() => {
+                mapaUsuarios();
+            }, 2000)
             break;
 
         case '/logout':
@@ -125,20 +142,7 @@ function cerrarSesion(e=0) {
     }
 
     setTimeout(() => {
-        // localStorage.clear();
-
-        localStorage.removeItem("token")
-        localStorage.removeItem("id");
-
-        localStorage.setItem("tiempoTotal", Number(localStorage.getItem("tiempoTotal"))+tiempo)
-
-        console.log("Duracion total: "+localStorage.getItem("tiempoTotal")+" Segundos")
-        console.log(
-            "Duracion de la sesion reciente: \n" 
-            + tiempoSesionActual/60 + " Minutos\n"
-            + tiempoSesionActual + " Segundos"
-        )
-
+        localStorage.clear();
         ruteo.push("/login");
         inicio();
     }, time)
@@ -476,17 +480,80 @@ function eliminarActividadRegistro(idRegistro) {
     .catch(e => console.log(e))
 }
 
-function tiempoTotalIniciadoSesion() {
-    $("#tiempoTotal").innerHTML="";
-    $("#tiempoTotal").innerHTML += `
-        <ion-item color="success">
-            <p style="color: white">Tiempo Total: </p>
-        </ion-item>
-        <ion-item>
-            <p>${localStorage.getItem("tiempoTotal")} Segundos</p>
-        </ion-item>
-        <ion-item>
-            <p>${(Number(localStorage.getItem("tiempoTotal"))/60).toFixed()} Minutos</p>
-        </ion-item>
-    `;
+function tiempoTotal() {
+    apiRegistros()
+    .then(response => {
+        let actual = new Date();
+        let dia = String(actual.toLocaleDateString("es-ES"));
+
+        let tiempoDiario = 0;
+        let tiempoTotal = 0;
+
+        response.registros.forEach(e => {
+            if (e.fecha.slice(-2) == dia.slice(0, 2) && e.fecha.slice(0, 4) == dia.slice(5)) {
+                tiempoDiario += e.tiempo;
+            }
+            tiempoTotal += e.tiempo;
+        })
+
+        $("#tiempoTotal").innerHTML = `<p>Tiempo Total: ${tiempoTotal} minutos</p>`
+        $("#tiempoDiario").innerHTML = `<p>Tiempo Diario: ${tiempoDiario} minutos</p>`
+
+    })
+}
+
+function mapaUsuarios() {
+    if (map!=null){
+        map.remove();
+    }
+    map = L.map('map').fitWorld();
+
+    fetch(urlBase+"/paises.php", {
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(e => e.json())
+    .then(response => {
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        usuariosPorPais()
+        .then(res2 => {
+            if (res2.codigo == 200) {
+                response.paises.forEach(pais => {
+                    let cantidadUsuarios;
+                    for (let k = 0; k < res2.paises.length; k++) {
+                        if (res2.paises[k].name == pais.name) {
+                            cantidadUsuarios = `País: ${pais.name}, Usuarios: ${String(res2.paises[k].cantidadDeUsuarios)}`;
+                            break;
+                        }
+                    }
+                    L.marker([pais.latitude, pais.longitude]).addTo(map).bindPopup(cantidadUsuarios).addTo(map).openPopup();
+                })
+            } else {
+                return cerrarSesion();
+            }
+        })
+    })
+    .catch(e => console.log(e))
+}
+
+async function usuariosPorPais() {
+    try {
+        const response = await fetch(urlBase+"/usuariosPorPais.php", {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': localStorage.getItem("token"),
+                'iduser': localStorage.getItem("id")
+            }
+        })
+        return await response.json();
+    } catch (e) {
+        return e;
+    }
 }

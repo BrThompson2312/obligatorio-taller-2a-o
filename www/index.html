@@ -7,6 +7,12 @@
     <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js"></script>
     <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core/css/ionic.bundle.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
     <script defer src="JS/main.js"></script>
     <script src="capacitor.js"></script>
 </head>
@@ -19,8 +25,11 @@
             <ion-route url="/login" component="login"></ion-route>
             <ion-route url="/agregarRegistro" component="agregarRegistro"></ion-route>
             <ion-route url="/listadoRegistros" component="listadoRegistros"></ion-route>
-            <ion-route url="/logout" component="logout"></ion-route>
+            <ion-route url="/tiempoTotalYDiario" component="tiempoTotalYDiario"></ion-route>
+            <ion-route url="/mapaUsuarios" component="mapaUsuarios"></ion-route>
             <ion-route url="/notFound" component="notFound"></ion-route>
+            <ion-route url="/logout" component="logout"></ion-route>
+            <ion-route url="/notFound" component="notFound"></ion-route>tiempoTotalYDiario
         </ion-router>
         <ion-nav></ion-nav>
 
@@ -37,8 +46,9 @@
                     <ion-item class="menuLogin" href="/registro">Registro</ion-item>
                     <ion-item href="/agregarRegistro">Agregar Registro</ion-item>
                     <ion-item href="/listadoRegistros">Listado de registros</ion-item>
+                    <ion-item href="/tiempoTotalYDiario">Tiempo Total Y Diario</ion-item>
+                    <ion-item href="/mapaUsuarios">Mapa Usuarios</ion-item>
                     <ion-item href="/logout" color="danger">Logout</ion-item>
-                    <div id="tiempoTotal" color="success"></div>
                 </ion-list>
             </ion-content>
         </ion-menu>
@@ -151,6 +161,38 @@
                     <ion-input label="Fecha" label-placement="stacked" type="date" id="txtFechaRegistro"></ion-input>
                 </ion-item>
                 <ion-button id="btnAgregarRegistro" style="width: 100%;">Agregar</ion-button>
+            </ion-content>
+        </div>
+
+        <div class="ion-page" id="tiempoTotalYDiario">
+            <ion-header>
+                <ion-toolbar>
+                    <ion-title>Tiempo Total y Diario</ion-title>
+                    <ion-buttons slot="start">
+                        <ion-menu-button></ion-menu-button>
+                    </ion-buttons>
+                </ion-toolbar>
+            </ion-header>
+            <ion-content class="ion-padding">
+                <ion-item id="tiempoTotal"></ion-item>
+                <ion-item id="tiempoDiario"></ion-item>
+            </ion-content>
+        </div>
+
+        <div class="ion-page" id="mapaUsuarios">
+            <ion-header>
+                <ion-toolbar>
+                    <ion-title>Mapa Usuarios</ion-title>
+                    <ion-buttons slot="start">
+                        <ion-menu-button></ion-menu-button>
+                    </ion-buttons>
+                </ion-toolbar>
+            </ion-header>
+            <ion-content class="ion-padding">
+                <style>
+                    #map { height: 300px; }
+                </style>
+                <div id="map"></div>
             </ion-content>
         </div>
 
