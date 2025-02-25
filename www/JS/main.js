@@ -112,7 +112,6 @@ function rutas(event) {
         case '/listadoRegistros':
             verificarLogueado();
             $("#listadoRegistros").style.display = "block";
-            document.querySelector("#registros").innerHTML = "";
             listadoRegistros();
             break;
 
@@ -407,17 +406,19 @@ async function apiRegistros() {
 }
 
 function listadoRegistros() {
+    $("#gridRegistros").innerHTML="";
     const limit = true;
     mostrarMensaje("Cargando Listado...", undefined, undefined, "warning")
     apiRegistros()
     .then(e => {
         if (e.codigo == 200) {
             if (e.registros.length == 0) {
-                $("#listadoRegistros div").innerHTML = "<p>No hay registros</p>"
+                $("#listadoRegistros ion-content p").innerHTML = "No hay registros"
             } else {
+                $("#listadoRegistros ion-content p").innerHTML = ""
                 e.registros.forEach((i, o) => {
                     if (limit) {
-                        $("#registros").innerHTML += `
+                        $("#gridRegistros").innerHTML += `
                         <ion-row class="ion-align-items-center ion-text-center">
                             <ion-col>
                                 <img src="http://movetrack.develotion.com/imgs/${i.idActividad}.png">
