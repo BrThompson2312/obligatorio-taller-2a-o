@@ -38,6 +38,7 @@
                     <ion-item href="/agregarRegistro">Agregar Registro</ion-item>
                     <ion-item href="/listadoRegistros">Listado de registros</ion-item>
                     <ion-item href="/logout" color="danger">Logout</ion-item>
+                    <div id="tiempoTotal" color="success"></div>
                 </ion-list>
             </ion-content>
         </ion-menu>
@@ -112,12 +113,14 @@
                 <h1>Listado de registros</h1>
                 <div>
                     <ion-grid>
-                        <ion-row>
+                        <ion-row class="ion-text-center">
+                            <ion-col></ion-col>
                             <ion-col>ID Registro</ion-col>
                             <ion-col>ID Actividad</ion-col>
                             <ion-col>ID Usuario</ion-col>
                             <ion-col>Tiempo</ion-col>
                             <ion-col>Fecha</ion-col>
+                            <ion-col></ion-col>
                         </ion-row>
                     </ion-grid>
                     <ion-grid id="registros"></ion-grid>

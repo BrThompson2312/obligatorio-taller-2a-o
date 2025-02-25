@@ -3,11 +3,22 @@ const $ = (p) => document.querySelector(p);
 
 const urlBase = 'https://movetrack.develotion.com';
 
+let tiempo = Number(localStorage.getItem("tiempoTotal"));
+let tiempoSesionActual = 0;
+
 inicio();
 ocultarSecciones();
 eventos();
 
 function inicio() {
+    // console.clear();
+
+    console.log(Number(localStorage.getItem("tiempoTotal")))
+
+    if (localStorage.getItem("tiempoTotal")==null) {
+        localStorage.setItem("tiempoTotal", tiempo)
+    }
+
     console.log(localStorage.getItem("token"));
     if (localStorage.getItem("token") == null) {
         mostrarMenuLogueado(false);
@@ -15,9 +26,18 @@ function inicio() {
     } else {
         mostrarMenuLogueado();
         selectActividades();
-        listadoRegistros()
-        obtenerImagenActividad();
         ruteo.push("/");
+
+        tiempo = Number(localStorage.getItem("tiempoTotal"));
+        setInterval(() => {
+            if (localStorage.getItem("token")!=null){
+                console.log(tiempo)
+                tiempo+=1;
+                tiempoSesionActual+=1;
+            }
+        }, 1000)
+
+        tiempoTotalIniciadoSesion();
     }
 }
 
@@ -72,6 +92,7 @@ function rutas(event) {
 
         case '/listadoRegistros':
             verificarLogueado();
+            listadoRegistros();
             $("#listadoRegistros").style.display = "block";
             break;
 
@@ -104,7 +125,20 @@ function cerrarSesion(e=0) {
     }
 
     setTimeout(() => {
-        localStorage.clear();
+        // localStorage.clear();
+
+        localStorage.removeItem("token")
+        localStorage.removeItem("id");
+
+        localStorage.setItem("tiempoTotal", Number(localStorage.getItem("tiempoTotal"))+tiempo)
+
+        console.log("Duracion total: "+localStorage.getItem("tiempoTotal")+" Segundos")
+        console.log(
+            "Duracion de la sesion reciente: \n" 
+            + tiempoSesionActual/60 + " Minutos\n"
+            + tiempoSesionActual + " Segundos"
+        )
+
         ruteo.push("/login");
         inicio();
     }, time)
@@ -364,7 +398,7 @@ function agregarRegistroActividad() {
 
 async function apiRegistros() {
     try {
-        const response = await fetch(urlBase+"/registros.php", {
+        const response = await fetch(urlBase+"/registros.php?idUsuario="+localStorage.getItem("id"), {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -379,25 +413,39 @@ async function apiRegistros() {
 }
 
 function listadoRegistros() {
+    $("#registros").innerHTML="";
+    mostrarMensaje("Cargando Listado...", undefined, undefined, "warning")
     apiRegistros()
     .then(e => {
         if (e.codigo == 200) {
-            console.log(e.registros.length)
+            console.log(e)
             if (e.registros.length == 0) {
                 $("#listadoRegistros div").innerHTML = "<p>No hay registros</p>"
             } else {
-                e.registros.forEach(i => {
-                    $("#registros").innerHTML = `
-                        <ion-row>
+                e.registros.forEach((i, o) => {
+                    if (o < 20) {
+                        $("#registros").innerHTML += `
+                        <ion-row class="ion-align-items-center ion-text-center">
+                            <ion-col>
+                                <img src="http://movetrack.develotion.com/imgs/${i.idActividad}.png">
+                            </ion-col>
                             <ion-col>${i.id}</ion-col>
                             <ion-col>${i.idActividad}</ion-col>
                             <ion-col>${i.idUsuario}</ion-col>
                             <ion-col>${i.tiempo}</ion-col>
                             <ion-col>${i.fecha}</ion-col>
+                            <ion-col>
+                                <ion-button onclick=eliminarActividadRegistro(${i.id})>
+                                    <ion-icon color="light" name="trash"></ion-icon>
+                                </ion-button>
+                            </ion-col>
                         </ion-row>
-                    `;
+                    `;  
+                    }
                 })
             }
+            mostrarMensaje("Listado cargado correctamente", undefined, undefined, "success")
+
         } else {
             cerrarSesion(e.codigo);
         }
@@ -405,21 +453,40 @@ function listadoRegistros() {
     .catch(e => console.log(e))
 }
 
-function obtenerImagenActividad() {
-    fetch("https://movetrack.develotion.com/imgs/", {
-        method: 'POST',
+function eliminarActividadRegistro(idRegistro) {
+    if (idRegistro==null) throw new Error("Se necesita un ID");
+
+    fetch(urlBase+"/registros.php?idRegistro="+idRegistro, {
+        method: 'DELETE',
         headers: {
-            'Content-Type': 'application/json',  
+            'Content-Type': 'application/json',
             'apikey': localStorage.getItem("token"),
-            'iduser': localStorage.getItem("id"),
-        },
-        body: JSON.stringify(1)
+            'iduser': localStorage.getItem("id")
+        }
     })
+    .then(e => e.json())
     .then(e => {
         console.log(e)
-        return e.json();
+
+        let time = 1500;
+        if (e.codigo != 200) time=5000;
+
+        mostrarMensaje(e.mensaje, time);
     })
-    .then(e => {
-        console.log(e);
-    })
+    .catch(e => console.log(e))
+}
+
+function tiempoTotalIniciadoSesion() {
+    $("#tiempoTotal").innerHTML="";
+    $("#tiempoTotal").innerHTML += `
+        <ion-item color="success">
+            <p style="color: white">Tiempo Total: </p>
+        </ion-item>
+        <ion-item>
+            <p>${localStorage.getItem("tiempoTotal")} Segundos</p>
+        </ion-item>
+        <ion-item>
+            <p>${(Number(localStorage.getItem("tiempoTotal"))/60).toFixed()} Minutos</p>
+        </ion-item>
+    `;
 }
